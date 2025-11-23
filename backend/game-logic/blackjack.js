@@ -1,94 +1,104 @@
-// backend/game-logic/blackjack.js
-
-class BlackjackGame {
-  constructor(playerName = "Player") {
-    this.deck = createDeck();
-    this.shuffleDeck();
+// blackjack.js
+class Blackjack {
+  constructor() {
+    this.deck = this.createDeck();
     this.playerHand = [];
     this.dealerHand = [];
-    this.playerName = playerName;
-    this.bet = 0;
     this.gameOver = false;
     this.winner = null;
   }
 
-  shuffleDeck() {
-    for (let i = this.deck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+  // Create a shuffled deck
+  createDeck() {
+    const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
+    const ranks = [
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      '10',
+      'J',
+      'Q',
+      'K',
+      'A',
+    ];
+    const deck = [];
+
+    for (const suit of suits) {
+      for (const rank of ranks) {
+        deck.push({ suit, rank });
+      }
     }
+
+    // Shuffle
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+
+    return deck;
   }
 
+  // Deal initial two cards to player and dealer
   dealInitialHands() {
-    this.playerHand.push(this.deck.pop(), this.deck.pop());
-    this.dealerHand.push(this.deck.pop());
+    this.playerHand = [this.deck.pop(), this.deck.pop()];
+    this.dealerHand = [this.deck.pop(), this.deck.pop()];
   }
 
+  // Calculate hand value
   calculateHandValue(hand) {
     let value = 0;
     let aces = 0;
+
     for (const card of hand) {
-      if (["J", "Q", "K"].includes(card.rank)) value += 10;
-      else if (card.rank === "A") {
+      if (['J', 'Q', 'K'].includes(card.rank)) value += 10;
+      else if (card.rank === 'A') {
         value += 11;
-        aces += 1;
-      } else value += Number(card.rank);
+        aces++;
+      } else value += parseInt(card.rank);
     }
+
+    // Adjust for aces
     while (value > 21 && aces > 0) {
       value -= 10;
-      aces -= 1;
+      aces--;
     }
+
     return value;
   }
 
+  // Player hits
   playerHit() {
-    if (this.gameOver) return;
     this.playerHand.push(this.deck.pop());
-    const playerValue = this.calculateHandValue(this.playerHand);
-    if (playerValue > 21) this.endGame("dealer");
-    return playerValue;
+    const value = this.calculateHandValue(this.playerHand);
+
+    if (value > 21) {
+      this.gameOver = true;
+      this.winner = 'dealer';
+    }
+
+    return value;
   }
 
+  // Player stands
   playerStand() {
-    if (this.gameOver) return;
-    this.dealerPlay();
-    this.determineWinner();
-  }
-
-  dealerPlay() {
     while (this.calculateHandValue(this.dealerHand) < 17) {
       this.dealerHand.push(this.deck.pop());
     }
-  }
 
-  determineWinner() {
     const playerValue = this.calculateHandValue(this.playerHand);
     const dealerValue = this.calculateHandValue(this.dealerHand);
 
-    if (playerValue > 21) this.endGame("dealer");
-    else if (dealerValue > 21) this.endGame("player");
-    else if (playerValue > dealerValue) this.endGame("player");
-    else if (playerValue < dealerValue) this.endGame("dealer");
-    else this.endGame("tie");
-  }
+    if (dealerValue > 21 || playerValue > dealerValue) this.winner = 'player';
+    else if (dealerValue > playerValue) this.winner = 'dealer';
+    else this.winner = 'push';
 
-  endGame(winner) {
     this.gameOver = true;
-    this.winner = winner;
   }
 }
 
-// Helper function to create a deck
-function createDeck() {
-  const suits = ["Hearts", "Diamonds", "Clubs", "Spades"];
-  const ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
-  const deck = [];
-  for (const suit of suits) {
-    for (const rank of ranks) {
-      deck.push({ suit, rank });
-    }
-  }
-  return deck;
-}
-
-module.exports = { BlackjackGame, createDeck };
+module.exports = { Blackjack };
