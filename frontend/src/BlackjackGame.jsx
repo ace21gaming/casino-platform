@@ -1,33 +1,30 @@
 import React, { useState } from 'react';
 
-export default function BlackjackGame() {
+export default function Blackjack() {
+  const [playerId, setPlayerId] = useState(null);
   const [playerHand, setPlayerHand] = useState([]);
   const [dealerHand, setDealerHand] = useState([]);
   const [playerValue, setPlayerValue] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
-  const [playerId, setPlayerId] = useState(null);
+
+  // Automatically picks local or production backend
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   const startGame = async () => {
+    if (!BACKEND_URL) {
+      console.error('Backend URL not set!');
+      return;
+    }
+
     try {
-      console.log('Starting game...');
-      const res = await fetch('http://localhost:5001/api/blackjack/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!res.ok) {
-        console.error('Start game failed:', res.status, res.statusText);
-        return;
-      }
-
+      const res = await fetch(`${BACKEND_URL}/start`, { method: 'POST' });
       const data = await res.json();
-      console.log('Start game response:', data);
 
-      setPlayerId(data.playerId || null);
-      setPlayerHand(data.playerHand || []);
-      setDealerHand(data.dealerHand || []);
-      setPlayerValue(data.playerValue || 0);
+      setPlayerId(data.playerId);
+      setPlayerHand(data.playerHand);
+      setDealerHand(data.dealerHand);
+      setPlayerValue(data.playerValue);
       setGameOver(false);
       setWinner(null);
     } catch (err) {
@@ -36,63 +33,63 @@ export default function BlackjackGame() {
   };
 
   const playAction = async (action) => {
-    if (!playerId) {
-      console.warn('Cannot play action: no playerId');
-      return;
-    }
+    if (!playerId || !BACKEND_URL) return;
 
     try {
-      console.log('Playing action:', action, 'playerId:', playerId);
-
-      const res = await fetch('http://localhost:5001/api/blackjack/action', {
+      const res = await fetch(`${BACKEND_URL}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId, action }),
       });
 
-      if (!res.ok) {
-        console.error('Action failed:', res.status, res.statusText);
-        return;
-      }
-
       const data = await res.json();
-      console.log('Action response:', data);
 
-      setPlayerHand(data.playerHand || []);
-      setDealerHand(data.dealerHand || []);
-      setPlayerValue(data.playerValue || 0);
-      setGameOver(data.gameOver || false);
-      setWinner(data.winner || null);
+      setPlayerHand(data.playerHand);
+      setDealerHand(data.dealerHand);
+      setPlayerValue(data.playerValue);
+      setGameOver(data.gameOver);
+      setWinner(data.winner);
     } catch (err) {
       console.error('Play action error:', err);
     }
   };
 
   return (
-    <div>
-      <h2>Blackjack</h2>
-      <button onClick={startGame}>Start Game</button>
+    <div style={{ textAlign: 'center', marginTop: '50px' }}>
+      <h1>Blackjack</h1>
+      <button onClick={startGame} style={{ margin: '10px' }}>
+        Start Game
+      </button>
 
       {playerHand.length > 0 && (
         <>
           <p>
-            Player Hand:{' '}
+            <strong>Player Hand:</strong>{' '}
             {playerHand.map((c) => `${c.rank} of ${c.suit}`).join(', ')}
           </p>
           <p>
-            Dealer Hand:{' '}
+            <strong>Dealer Hand:</strong>{' '}
             {dealerHand.map((c) => `${c.rank} of ${c.suit}`).join(', ')}
           </p>
           <p>Player Value: {playerValue}</p>
 
           {!gameOver ? (
             <>
-              <button onClick={() => playAction('hit')}>Hit</button>
-              <button onClick={() => playAction('stand')}>Stand</button>
-              <button onClick={() => playAction('double')}>Double</button>
+              <button
+                onClick={() => playAction('hit')}
+                style={{ margin: '5px' }}
+              >
+                Hit
+              </button>
+              <button
+                onClick={() => playAction('stand')}
+                style={{ margin: '5px' }}
+              >
+                Stand
+              </button>
             </>
           ) : (
-            <p>Winner: {winner}</p>
+            <h2>Winner: {winner?.toUpperCase()}</h2>
           )}
         </>
       )}
